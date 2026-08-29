@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vejr-App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        #cityInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        #cityInput:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .weather-info {
+            display: none;
+        }
+
+        .weather-info.show {
+            display: block;
+        }
+
+        .city-name {
+            text-align: center;
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .weather-main {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-radius: 15px;
+        }
+
+        .temperature {
+            font-size: 48px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .weather-condition {
+            font-size: 18px;
+            color: #666;
+            text-transform: capitalize;
+            margin-bottom: 15px;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .detail-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #eee;
+            text-align: center;
+        }
+
+        .detail-label {
+            font-size: 13px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .detail-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-size: 16px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .error {
+            text-align: center;
+            color: #e74c3c;
+            background: #fadbd8;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .temperature {
+                font-size: 40px;
+            }
+
+            .city-name {
+                font-size: 20px;
+            }
+
+            .weather-details {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌤️ Vejr-App</h1>
+        
+        <div class="search-box">
+            <input 
+                type="text" 
+                id="cityInput" 
+                placeholder="Skriv bynavn..."
+                autocomplete="off"
+            >
+            <button onclick="searchWeather()">Søg</button>
+        </div>
+
+        <div class="loading" id="loading">
+            Søger efter vejrdata...
+        </div>
+
+        <div class="weather-info" id="weatherInfo">
+            <div class="city-name" id="cityName"></div>
+            
+            <div class="weather-main">
+                <div class="temperature" id="temperature"></div>
+                <div class="weather-condition" id="condition"></div>
+            </div>
+
+            <div class="weather-details">
+                <div class="detail-card">
+                    <div class="detail-label">Føles som</div>
+                    <div class="detail-value" id="feelsLike"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Fugtighed</div>
+                    <div class="detail-value" id="humidity"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Vindstyrke</div>
+                    <div class="detail-value" id="windSpeed"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Tryk</div>
+                    <div class="detail-value" id="pressure"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="error" id="error"></div>
+    </div>
+
+    <script>
+        const weatherInfo = document.getElementById('weatherInfo');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const cityInput = document.getElementById('cityInput');
+
+        // WMO Weather interpretation codes
+        const weatherCodes = {
+            0: 'Klart',
+            1: 'Overvejende klart',
+            2: 'Delvis skyet',
+            3: 'Overcast',
+            45: 'Tåget',
+            48: 'Tåget rimfrost',
+            51: 'Svag regn',
+            53: 'Moderat regn',
+            55: 'Tæt regn',
+            61: 'Svag regn',
+            63: 'Moderat regn',
+            65: 'Kraftig regn',
+            71: 'Svag sne',
+            73: 'Moderat sne',
+            75: 'Kraftig sne',
+            77: 'Snekorn',
+            80: 'Svage regn byger',
+            81: 'Moderate regn byger',
+            82: 'Kraftige regn byger',
+            85: 'Svage sne byger',
+            86: 'Kraftige sne byger',
+            95: 'Tordenvejr med regn',
+            96: 'Tordenvejr med hagl',
+            99: 'Tordenvejr med kraftigt hagl'
+        };
+
+        async function searchWeather() {
+            const city = cityInput.value.trim();
+            
+            if (!city) {
+                showError('Venligst skriv et bynavn');
+                return;
+            }
+
+            showLoading(true);
+            error.classList.remove('show');
+
+            try {
+                // Step 1: Get coordinates from city name
+                const geoResponse = await fetch(
+                    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=da&format=json`
+                );
+                
+                const geoData = await geoResponse.json();
+
+                if (!geoData.results || geoData.results.length === 0) {
+                    showError('Byen blev ikke fundet. Prøv igen.');
+                    showLoading(false);
+                    return;
+                }
+
+                const location = geoData.results[0];
+                const { latitude, longitude, name, country } = location;
+
+                // Step 2: Get weather data
+                const weatherResponse = await fetch(
+                    `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,pressure_msl,apparent_temperature&temperature_unit=celsius&wind_speed_unit=kmh&timezone=auto`
+                );
+
+                const weatherData = await weatherResponse.json();
+                const current = weatherData.current;
+
+                // Display weather info
+                displayWeather(name, country, current);
+                showLoading(false);
+
+            } catch (err) {
+                showError('Der opstod en fejl. Prøv igen senere.');
+                showLoading(false);
+                console.error(err);
+            }
+        }
+
+        function displayWeather(city, country, data) {
+            document.getElementById('cityName').textContent = `${city}, ${country}`;
+            document.getElementById('temperature').textContent = `${Math.round(data.temperature_2m)}°C`;
+            document.getElementById('condition').textContent = weatherCodes[data.weather_code] || 'Ukendt';
+            document.getElementById('feelsLike').textContent = `${Math.round(data.apparent_temperature)}°C`;
+            document.getElementById('humidity').textContent = `${data.relative_humidity_2m}%`;
+            document.getElementById('windSpeed').textContent = `${Math.round(data.wind_speed_10m)} km/h`;
+            document.getElementById('pressure').textContent = `${Math.round(data.pressure_msl)} hPa`;
+
+            weatherInfo.classList.add('show');
+        }
+
+        function showLoading(show) {
+            if (show) {
+                loading.classList.add('show');
+            } else {
+                loading.classList.remove('show');
+            }
+        }
+
+        function showError(message) {
+            error.textContent = message;
+            error.classList.add('show');
+            weatherInfo.classList.remove('show');
+        }
+
+        // Allow search with Enter key
+        cityInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchWeather();
+            }
+        });
+
+        // Focus input on page load
+        window.addEventListener('load', () => {
+            cityInput.focus();
+        });
+    </script>
+</body>
+</html>
